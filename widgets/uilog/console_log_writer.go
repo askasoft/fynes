@@ -2,15 +2,19 @@ package uilog
 
 import (
 	"fyne.io/fyne/v2/widget"
-	"github.com/askasoft/fynes/widgets"
 	"github.com/askasoft/pango/log"
 )
+
+type ConsoleWidget interface {
+	AddText(s string, imp widget.Importance)
+	Clear()
+}
 
 type ConsoleLogWriter struct {
 	log.LogFilter
 	log.LogFormatter
 
-	Console *widgets.Console
+	Console ConsoleWidget
 }
 
 // Write write message in console.
@@ -21,8 +25,13 @@ func (clw *ConsoleLogWriter) Write(le *log.Event) (err error) {
 
 	bs := clw.Format(le)
 
-	var imp widget.Importance
-	switch le.Level {
+	imp := LogLevelToImportance(le.Level)
+	clw.Console.AddText(string(bs), imp)
+	return
+}
+
+func LogLevelToImportance(lvl log.Level) (imp widget.Importance) {
+	switch lvl {
 	case log.LevelTrace:
 		imp = widget.LowImportance
 	case log.LevelDebug:
@@ -34,9 +43,6 @@ func (clw *ConsoleLogWriter) Write(le *log.Event) (err error) {
 	case log.LevelError:
 		imp = widget.DangerImportance
 	}
-
-	clw.Console.Add(string(bs), imp)
-	clw.Console.ScrollToBottom()
 	return
 }
 
